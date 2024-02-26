@@ -32,7 +32,14 @@ export async function launchRegistry() {
       res.status(400).send({ message: "Node already registered" });
     }
   });
-  
+
+  _registry.get("/getNodeRegistry", (req: Request, res: Response) => {
+    const response: GetNodeRegistryBody = {
+      nodes: nodes
+    };
+    res.status(200).json(response);
+  });
+
   const server = _registry.listen(REGISTRY_PORT, () => {
     console.log(`registry is listening on port ${REGISTRY_PORT}`);
   });
