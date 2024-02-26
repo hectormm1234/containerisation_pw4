@@ -1,32 +1,22 @@
 import bodyParser from "body-parser";
 import express from "express";
 import { BASE_ONION_ROUTER_PORT,REGISTRY_PORT } from "../config";
-
-import { generateKeyPairSync } from 'crypto';
-
-function generateKeys() {
-  const { publicKey, privateKey } = generateKeyPairSync('rsa', {
-    modulusLength: 2048,
-    publicKeyEncoding: {
-      type: 'spki',
-      format: 'pem',
-    },
-    privateKeyEncoding: {
-      type: 'pkcs8',
-      format: 'pem',
-    },
-  });
-  
-  return { publicKey, privateKey };
-}
+import {
+  generateRsaKeyPair,
+  exportPubKey,
+  exportPrvKey,
+  importPrvKey,
+  rsaEncrypt,
+  rsaDecrypt,
+} from '../crypto';
 
 
 export async function simpleOnionRouter(nodeId: number) {
 
-  const { publicKey, privateKey } = generateKeys();
-  const publicKeyBase64 = Buffer.from(publicKey).toString('base64');
-  const privateKeyBase64 = Buffer.from(privateKey).toString('base64');
-  let nodePrivateKey: string | null = privateKeyBase64;
+  const { publicKey, privateKey } = await generateRsaKeyPair();
+  const publicKeyBase64 = await exportPubKey(publicKey);
+  const privateKeyBase64 = await exportPrvKey(privateKey);
+  let nodePrivateKey = privateKey;
 
   let lastReceivedEncryptedMessage: string | null = null;
   let lastReceivedDecryptedMessage: string | null = null;
@@ -37,7 +27,7 @@ export async function simpleOnionRouter(nodeId: number) {
   onionRouter.use(bodyParser.json());
 
   onionRouter.get("/status", (req, res) => {res.send("live");});
-  
+
   onionRouter.get("/getLastReceivedEncryptedMessage", (req, res) => {
     res.json({ result: lastReceivedEncryptedMessage });
   });
