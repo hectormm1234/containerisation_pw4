@@ -137,7 +137,7 @@ export async function createRandomSymmetricKey(): Promise<webcrypto.CryptoKey> {
   //      keys are extractable.
   return await webcrypto.subtle.generateKey(
     {
-      name: "AES-GCM",
+      name: "AES-CBC",
       length: 256,
     },
     true,
@@ -161,7 +161,10 @@ export async function importSymKey(
   return await webcrypto.subtle.importKey(
     "raw",
     keyBuffer,
-    "AES-GCM",
+    {
+      name: "AES-CBC",
+      length: 256,
+    },
     true,
     ["encrypt", "decrypt"]
   );
@@ -176,9 +179,9 @@ export async function symEncrypt(
   // tip: encode the data to a uin8array with TextEncoder
   const encoder = new TextEncoder();
   const encodedData = encoder.encode(data);
-  const iv = webcrypto.getRandomValues(new Uint8Array(12));
+  const iv = webcrypto.getRandomValues(new Uint8Array(16));
   const encrypted = await webcrypto.subtle.encrypt(
-    { name: "AES-GCM", iv },
+    { name: "AES-CBC", iv: iv },
     key,
     encodedData
   );
@@ -197,10 +200,10 @@ export async function symDecrypt(
   // tip: use the provided base64ToArrayBuffer function and use TextDecode to go back to a string format
   const key = await importSymKey(strKey);
   const encryptedDataBuffer = base64ToArrayBuffer(encryptedData);
-  const iv = encryptedDataBuffer.slice(0, 12);
-  const data = encryptedDataBuffer.slice(12);
+  const iv = encryptedDataBuffer.slice(0, 16);
+  const data = encryptedDataBuffer.slice(16);
   const decrypted = await webcrypto.subtle.decrypt(
-    { name: "AES-GCM", iv },
+    { name: "AES-CBC", iv: iv },
     key,
     data
   );
