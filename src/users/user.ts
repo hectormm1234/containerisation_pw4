@@ -1,5 +1,5 @@
 import bodyParser from "body-parser";
-import express from "express";
+import express, { Request, Response } from "express";
 import { BASE_USER_PORT } from "../config";
 
 export type SendMessageBody = {
@@ -14,6 +14,16 @@ export async function user(userId: number) {
   const _user = express();
   _user.use(express.json());
   _user.use(bodyParser.json());
+
+  _user.post("/message", (req: Request, res: Response) => {
+    const body: SendMessageBody = req.body;
+    if (userId === body.destinationUserId) { 
+      lastReceivedMessage = body.message;
+      res.status(200).json({ message: "Message received successfully" });
+    } else {
+      res.status(400).json({ message: "Incorrect user ID" });
+    }
+  });
 
   _user.get("/status", (req, res) => {res.send("live");});
   _user.get("/getLastReceivedMessage", (req, res) => {

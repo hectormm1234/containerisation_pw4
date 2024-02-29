@@ -17,9 +17,18 @@ export async function simpleOnionRouter(nodeId: number) {
   let { publicKey, privateKey } = await generateRsaKeyPair();
   let publicKeyBase64 = await exportPubKey(publicKey);
   let privateKeyBase64 = await exportPrvKey(privateKey);
-  let nodePrivateKey = privateKey;
 
-
+  try
+  {
+    await fetch(`http://localhost:${REGISTRY_PORT}/registerNode`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({nodeId: nodeId, pubKey: publicKeyBase64}),
+      });
+  }
+  catch(error)
+  {console.error(`Error registering node ${nodeId}: ${error}`);}
+  
   const onionRouter = express();
   onionRouter.use(express.json());
   onionRouter.use(bodyParser.json());
@@ -36,27 +45,12 @@ export async function simpleOnionRouter(nodeId: number) {
     res.json({ result: lastMessageDestination });
   });
   onionRouter.get("/getPrivateKey", (req, res) => {
-    res.json({ result: nodePrivateKey });
+    res.json({ result: privateKeyBase64 });
   });
 
   const server = onionRouter.listen(BASE_ONION_ROUTER_PORT + nodeId, () => {
-    console.log(
-      `Onion router ${nodeId} is listening on port ${
-        BASE_ONION_ROUTER_PORT + nodeId
-      }`
-    );
+    console.log(`Onion router ${nodeId} is listening on port ${BASE_ONION_ROUTER_PORT + nodeId}`);
   });
-
-  const body = JSON.stringify({
-    nodeId: nodeId,
-    pubKey: publicKeyBase64,
-  });
-
-  await fetch(`http://localhost:${REGISTRY_PORT}/registerNode`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body,
-  })
-
+  
   return server;
 }
