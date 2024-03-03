@@ -1,6 +1,8 @@
 import bodyParser from "body-parser";
 import express, { Request, Response } from "express";
-import { BASE_USER_PORT } from "../config";
+import { BASE_USER_PORT, BASE_ONION_ROUTER_PORT } from "../config";
+import {Node, GetNodeRegistryBody} from "@/src/registry/registry";
+import {createRandomSymmetricKey, exportSymKey, importSymKey, rsaEncrypt, symEncrypt} from "../crypto";
 
 export type SendMessageBody = {
   message: string;
@@ -15,7 +17,7 @@ export async function user(userId: number) {
   _user.use(express.json());
   _user.use(bodyParser.json());
 
-  _user.post("/message", (req: Request, res: Response) => {
+  /*_user.post("/message", (req: Request, res: Response) => {
     const body: SendMessageBody = req.body;
     if (userId === body.destinationUserId) { 
       lastReceivedMessage = body.message;
@@ -23,15 +25,26 @@ export async function user(userId: number) {
     } else {
       res.status(400).json({ message: "Incorrect user ID" });
     }
-  });
+  });*/
+
 
   _user.get("/status", (req, res) => {res.send("live");});
+
+  
   _user.get("/getLastReceivedMessage", (req, res) => {
-    res.json({ result: lastReceivedMessage });
+    res.status(200).json({ result: lastReceivedMessage });
   });
+
+
   _user.get("/getLastSentMessage", (req, res) => {
-    res.json({ result: lastSentMessage });
+    res.status(200).json({ result: lastSentMessage });
   });
+
+  _user.post("/message", (req, res) => {
+    lastReceivedMessage = req.body.message;
+    res.status(200).send("ok");
+  });
+
   const server = _user.listen(BASE_USER_PORT + userId, () => {
     console.log(
       `User ${userId} is listening on port ${BASE_USER_PORT + userId}`

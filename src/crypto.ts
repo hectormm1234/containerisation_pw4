@@ -68,7 +68,7 @@ export async function importPubKey(
     keyBuffer,
     {
       name: "RSA-OAEP",
-      hash: "SHA-256",
+      hash:{name:  "SHA-256"},
     },
     true,
     ["encrypt"]
@@ -86,7 +86,7 @@ export async function importPrvKey(
     keyBuffer,
     {
       name: "RSA-OAEP",
-      hash: "SHA-256",
+      hash: {name: "SHA-256"},
     },
     true,
     ["decrypt"]
