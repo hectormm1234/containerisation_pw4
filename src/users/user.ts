@@ -42,7 +42,7 @@ export async function user(userId: number) {
 
   _user.post("/message", (req, res) => {
     lastReceivedMessage = req.body.message;
-    res.status(200).send("ok");
+    res.status(200).send("success");
   });
 
   const server = _user.listen(BASE_USER_PORT + userId, () => {
