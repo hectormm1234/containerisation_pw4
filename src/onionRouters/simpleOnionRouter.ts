@@ -4,7 +4,9 @@ import { BASE_ONION_ROUTER_PORT,REGISTRY_PORT } from "../config";
 import {
   generateRsaKeyPair,
   exportPubKey,
-  exportPrvKey
+  exportPrvKey,
+  rsaDecrypt,
+  symDecrypt
 } from '../crypto';
 import {Node} from "../registry/registry";
 
@@ -14,11 +16,6 @@ export async function simpleOnionRouter(nodeId: number) {
   const onionRouter = express();
   onionRouter.use(express.json());
   onionRouter.use(bodyParser.json());
-
-  /*
-  const { publicKey, privateKey } = await generateRsaKeyPair();
-  const publicKeyBase64 = await exportPubKey(publicKey);
-  const privateKeyBase64 = await exportPrvKey(privateKey);*/
 
   let rsaKeyPair = await generateRsaKeyPair();
   let pubKey = await exportPubKey(rsaKeyPair.publicKey);
@@ -43,6 +40,27 @@ export async function simpleOnionRouter(nodeId: number) {
     res.status(200).json({result: await exportPrvKey(privateKey)});
   });
  
+  onionRouter.post("/message", async (req, res) => {
+    const {message} = req.body;
+    const decryptedKey = await rsaDecrypt(message.slice(0, 344), privateKey);
+    const decryptedMessage = await symDecrypt(decryptedKey, message.slice(344));
+    const nextDestination = parseInt(decryptedMessage.slice(0, 10), 10);
+    const remainingMessage = decryptedMessage.slice(10);
+    
+    lastReceivedEncryptedMessage = message;
+    lastReceivedDecryptedMessage = remainingMessage;
+    lastMessageDestination = nextDestination;
+    await fetch(`http://localhost:${nextDestination}/message`, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ message: remainingMessage }),
+    });
+    res.status(200).send("success");
+  });
+
+
   await fetch(`http://localhost:${REGISTRY_PORT}/registerNode`, {
     method: "POST",
     headers: {
